@@ -42,9 +42,11 @@ static void printUsage() {
     "     mute off            - Sets mute off (you can use 2 instead of 'off')\n"
     "\n"
     "     pbp n               - Switches PIP/PBP on certain Dell screens (e.g. U3421W), possible values:\n"
-    "                           off: 0, small window: 33, large window: 34, 50/50 split: 36, 26/74 split: 43, 74/26 split: 44.\n"
+    "                           off: 0, small window: 33, large window: 34, 50/50 split: 36, 26/74 split: 43, 74/26 split: 44, 2x2: 65.\n"
     "     pbp-input n         - Sets second PIP/PBP input on certain Dell screens, possible values:\n"
     "                           DisplayPort 1: 15, DisplayPort 2: 16, HDMI 1: 17, HDMI 2: 18.\n"
+    "     kvm n               - Sets KVM order on certain Dell screens, possible values: TBD.\n"
+    "                           Set 65280 to ove KVM to the next device on some Dells.\n"
     "\n"
     " get luminance           - Returns current luminance (if supported by the display).\n"
     "     contrast            - Returns current contrast (if supported by the display).\n"
@@ -97,7 +99,7 @@ static void printDisplayInfos(DisplayInfos *display, int nbDisplays, bool detail
 
 // Function to handle the reading operation (get, max, chg)
 static DDCValue readingOperation(IOAVServiceRef avService, DDCPacket *packet) {
-    DDCValue dummyAttr = {-1, -1};
+    DDCValue dummyAttr = {-1, -1, -1};
 
     prepareDDCRead(packet->data);
 
@@ -145,6 +147,8 @@ static UInt8 attrCodeFromCommand(char *command) {
     else if (STR_EQ(command, "blue") || STR_EQ(command, "b")) { return BLUE; }
     else if (STR_EQ(command, "pbp") || STR_EQ(command, "p")) { return PBP; }
     else if (STR_EQ(command, "pbp-input") || STR_EQ(command, "pi")) { return PBP_INPUT; }
+    else if (STR_EQ(command, "kvm") || STR_EQ(command, "k")) { return KVM; }
+    else if (STR_EQ(command, "kvm-switch") || STR_EQ(command, "ks")) { return KVM; }
     return 0x00;
 }
 
@@ -179,7 +183,7 @@ int main(int argc, char** argv) {
         argc -= 1;
         verbose = true;
     }
-    
+
     DisplayInfos displayInfos[MAX_DISPLAYS];
     DisplayInfos *selectedDisplay = NULL;
 
@@ -197,7 +201,7 @@ int main(int argc, char** argv) {
             printDisplayInfos(displayInfos, connectedDisplays, (argc >= 3 && (STR_EQ(argv[2], "detailed") || STR_EQ(argv[2], "d"))));
             return EXIT_SUCCESS;
         }
-        
+
         // Selecting display
         selectedDisplay = selectDisplay(displayInfos, connectedDisplays, argv[1]);
         if (selectedDisplay == NULL) {
@@ -208,7 +212,7 @@ int main(int argc, char** argv) {
 		argv += 2;
         argc -= 2;
     }
-    
+
     IOAVServiceRef avService;
 
     // If there is no display selected, we'll use the default display
@@ -233,7 +237,7 @@ int main(int argc, char** argv) {
         writeToStdOut([NSString stringWithFormat:@"Using display: %@ [%@]\n", selectedDisplay->productName, selectedDisplay->uuid]);
     }
 
-    DDCValue displayAttr = {-1, -1};
+    DDCValue displayAttr = {-1, -1, -1};
     UInt8 attrCode = attrCodeFromCommand(argv[1]);
     DDCPacket packet = createDDCPacket(attrCode);
 
@@ -250,13 +254,22 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
     }
-    
-    if (STR_EQ(argv[0], "get") || STR_EQ(argv[0], "max")) {
-        writeToStdOut([NSString stringWithFormat:@"%i\n", (STR_EQ(argv[0], "get") ? displayAttr.curValue : displayAttr.maxValue)]);
+
+    if (STR_EQ(argv[0], "get")) {
+        if (displayAttr.curValueHigh != -1){
+            writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.curValueHigh * 256 + displayAttr.curValue]);
+        }else{
+            writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.curValue]);
+        }
         return EXIT_SUCCESS;
     }
 
-    if (STR_EQ(argv[0], "set") || STR_EQ(argv[0], "chg") ) {   
+    if (STR_EQ(argv[0], "max")) {
+        writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.maxValue]);
+        return EXIT_SUCCESS;
+    }
+
+    if (STR_EQ(argv[0], "set") || STR_EQ(argv[0], "chg") ) {
         if (argc < 3) {
             writeToStdOut(@"Missing value! Enter 'm1ddc help' for help!\n");
             return EXIT_FAILURE;

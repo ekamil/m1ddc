@@ -61,8 +61,10 @@ DDCValue convertI2CtoDDC(char *i2cBytes) {
     DDCValue displayAttr = {};
     NSData *i2cData = [NSData dataWithBytes:(const void *)i2cBytes length:(NSUInteger)11];
     NSRange maxValueRange = {7, 1};
+    NSRange curValueRange = {8, 2};
     NSRange curValueRange = {9, 1};
     [[i2cData subdataWithRange:maxValueRange] getBytes:&displayAttr.maxValue length:sizeof(1)];
     [[i2cData subdataWithRange:curValueRange] getBytes:&displayAttr.curValue length:sizeof(1)];
+    [[i2cData subdataWithRange:curValueRangeHigh] getBytes:&displayAttr.curValueHigh length:sizeof(1)];
     return displayAttr;
 }
