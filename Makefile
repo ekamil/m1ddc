@@ -14,8 +14,8 @@ DEPFLAGS =	-MMD
 LDLIBS =	-framework CoreDisplay
 
 # Commands
-RM =		rm -f
-RMDIR =		rm -rf
+RM =		rm -fi
+RMDIR =		rm -rfi
 MKDIR =		mkdir -p
 MAKE =		make -C
 AR =		ar -rcs
