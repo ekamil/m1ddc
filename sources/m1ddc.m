@@ -99,7 +99,7 @@ static void printDisplayInfos(DisplayInfos *display, int nbDisplays, bool detail
 
 // Function to handle the reading operation (get, max, chg)
 static DDCValue readingOperation(IOAVServiceRef avService, DDCPacket *packet) {
-    DDCValue dummyAttr = {-1, -1, -1};
+    DDCValue dummyAttr = {-1, -1};
 
     prepareDDCRead(packet->data);
 
@@ -122,7 +122,7 @@ static DDCValue readingOperation(IOAVServiceRef avService, DDCPacket *packet) {
 }
 
 // Function to handle the writing operation (set, chg)
-static int writingOperation(IOAVServiceRef avService, DDCPacket *packet, UInt8 newValue) {
+static int writingOperation(IOAVServiceRef avService, DDCPacket *packet, UInt16 newValue) {
 
     prepareDDCWrite(packet->data, newValue);
 
@@ -152,7 +152,7 @@ static UInt8 attrCodeFromCommand(char *command) {
     return 0x00;
 }
 
-static UInt8 computeAttributeValue(char *command, char *arg, DDCValue displayAttr) {
+static UInt16 computeAttributeValue(char *command, char *arg, DDCValue displayAttr) {
     int newValue;
 
     if (STR_EQ(arg, "on") ) { newValue = 1; }
@@ -164,7 +164,8 @@ static UInt8 computeAttributeValue(char *command, char *arg, DDCValue displayAtt
         if (newValue < 0 ) { newValue = 0; }
         if (newValue > displayAttr.maxValue ) { newValue = displayAttr.maxValue; }
     }
-    return (UInt8)newValue;
+
+    return (UInt16)newValue;
 }
 
 int main(int argc, char** argv) {
@@ -237,7 +238,7 @@ int main(int argc, char** argv) {
         writeToStdOut([NSString stringWithFormat:@"Using display: %@ [%@]\n", selectedDisplay->productName, selectedDisplay->uuid]);
     }
 
-    DDCValue displayAttr = {-1, -1, -1};
+    DDCValue displayAttr = {-1, -1};
     UInt8 attrCode = attrCodeFromCommand(argv[1]);
     DDCPacket packet = createDDCPacket(attrCode);
 
@@ -256,11 +257,7 @@ int main(int argc, char** argv) {
     }
 
     if (STR_EQ(argv[0], "get")) {
-        if (displayAttr.curValueHigh != -1){
-            writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.curValueHigh * 256 + displayAttr.curValue]);
-        }else{
-            writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.curValue]);
-        }
+        writeToStdOut([NSString stringWithFormat:@"%i\n", displayAttr.curValue]);
         return EXIT_SUCCESS;
     }
 
@@ -275,12 +272,12 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        UInt8 writeValue = computeAttributeValue(argv[0], argv[2], displayAttr);
+        UInt16 writeValue = computeAttributeValue(argv[0], argv[2], displayAttr);
 
         if (writingOperation(avService, &packet, writeValue)) {
             return EXIT_FAILURE;
         }
-        writeToStdOut([NSString stringWithFormat:@"%i\n", writeValue]);
+        writeToStdOut([NSString stringWithFormat:@"Writing %i\n", writeValue]);
         return EXIT_SUCCESS;
     }
     writeToStdOut(@"Use 'set', 'get', 'max', 'chg' as first parameter! Enter 'm1ddc help' for help!\n");

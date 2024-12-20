@@ -29,7 +29,7 @@ void prepareDDCRead(UInt8* data) {
 }
 
 // Prepare DDC packet for write
-void prepareDDCWrite(UInt8* data, UInt8 newValue) {
+void prepareDDCWrite(UInt8* data, UInt16 newValue) {
     data[0] = 0x84;
     data[1] = 0x03;
     data[3] = (newValue) >> 8;
@@ -60,11 +60,15 @@ IOReturn performDDCWrite(IOAVServiceRef avService, DDCPacket *packet) {
 DDCValue convertI2CtoDDC(char *i2cBytes) {
     DDCValue displayAttr = {};
     NSData *i2cData = [NSData dataWithBytes:(const void *)i2cBytes length:(NSUInteger)11];
-    NSRange maxValueRange = {7, 1};
+    NSRange maxValueRange = {7, 2};
+    uint16_t maxValue = 0;
+    [[i2cData subdataWithRange:maxValueRange] getBytes:&maxValue length:sizeof(2)];
+    displayAttr.maxValue = CFSwapInt16BigToHost(maxValue);
+
     NSRange curValueRange = {8, 2};
-    NSRange curValueRange = {9, 1};
-    [[i2cData subdataWithRange:maxValueRange] getBytes:&displayAttr.maxValue length:sizeof(1)];
-    [[i2cData subdataWithRange:curValueRange] getBytes:&displayAttr.curValue length:sizeof(1)];
-    [[i2cData subdataWithRange:curValueRangeHigh] getBytes:&displayAttr.curValueHigh length:sizeof(1)];
+    uint16_t curValue = 0;
+    [[i2cData subdataWithRange:curValueRange] getBytes:&curValue length:sizeof(2)];
+    displayAttr.curValue = CFSwapInt16BigToHost(curValue);
+
     return displayAttr;
 }
