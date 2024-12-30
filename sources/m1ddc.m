@@ -46,7 +46,7 @@ static void printUsage() {
     "     pbp-input n         - Sets second PIP/PBP input on certain Dell screens, possible values:\n"
     "                           DisplayPort 1: 15, DisplayPort 2: 16, HDMI 1: 17, HDMI 2: 18.\n"
     "     kvm n               - Sets KVM order on certain Dell screens, possible values: TBD.\n"
-    "                           Set 65280 to ove KVM to the next device on some Dells.\n"
+    "                           Set 65280 to move KVM to the next device on some Dells.\n"
     "\n"
     " get luminance           - Returns current luminance (if supported by the display).\n"
     "     contrast            - Returns current contrast (if supported by the display).\n"
